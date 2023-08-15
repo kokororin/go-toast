@@ -2,10 +2,12 @@ package toast
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os/exec"
 	"strings"
 	"text/template"
+	"time"
 
 	"syscall"
 )
@@ -341,7 +343,9 @@ func Duration(name string) (toastDuration, error) {
 }
 
 func invokeTemporaryScript(content string) error {
-	cmd := exec.Command("PowerShell", content)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "PowerShell", "-NoProfile", "-NonInteractive", content)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
 		return err
