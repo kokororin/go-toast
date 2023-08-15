@@ -2,16 +2,14 @@ package toast
 
 import (
 	"bytes"
+	"context"
 	"errors"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"text/template"
+	"time"
 
 	"syscall"
-
-	uuid "github.com/nu7hatch/gouuid"
 )
 
 var toastTemplate *template.Template
@@ -345,18 +343,12 @@ func Duration(name string) (toastDuration, error) {
 }
 
 func invokeTemporaryScript(content string) error {
-	id, _ := uuid.NewV4()
-	file := filepath.Join(os.TempDir(), id.String()+".ps1")
-	defer os.Remove(file)
-	bomUtf16 := []byte("\uFEFF")
-	out := append(bomUtf16, []byte(content)...)
-	err := os.WriteFile(file, out, 0600)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command("PowerShell", "-ExecutionPolicy", "Bypass", "-File", file)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "PowerShell", "-NoProfile", "-NonInteractive", "-")
+	cmd.Stdin = strings.NewReader(content)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err = cmd.Run(); err != nil {
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
