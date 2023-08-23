@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 	"text/template"
@@ -345,11 +346,11 @@ func Duration(name string) (toastDuration, error) {
 func invokeTemporaryScript(content string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "PowerShell", "-NoProfile", "-NonInteractive", "-")
-	cmd.Stdin = strings.NewReader(content)
+
+	cmd := exec.CommandContext(ctx, "PowerShell", "-NoProfile", "-NonInteractive", "-Command", content)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
-		return err
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("sending notification with command `%s`: output `%s`, err %w", cmd.String(), string(out), err)
 	}
 	return nil
 }
