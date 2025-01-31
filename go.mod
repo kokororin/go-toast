@@ -1,3 +1,3 @@
-module github.com/kolide/toast
+module github.com/kokororin/go-toast
 
 go 1.19
